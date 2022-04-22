@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Runtime.Versioning;
 using System.Threading;
 using TinyAudio.DirectSound;
 using TinyAudio.DirectSound.Interop;
 
 namespace TinyAudio
 {
+    [SupportedOSPlatform(("windows"))]
     public sealed class DirectSoundAudioPlayer : AudioPlayer
     {
         private readonly DirectSoundBuffer directSoundBuffer;

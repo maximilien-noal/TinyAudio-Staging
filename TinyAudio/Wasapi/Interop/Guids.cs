@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Runtime.Versioning;
 
 namespace TinyAudio.Wasapi.Interop
 {
+    [SupportedOSPlatform(("windows"))]
     internal static class Guids
     {
         public static readonly Guid CLSID_MMDeviceEnumerator = new("BCDE0395-E52F-467C-8E3D-C4579291692E");

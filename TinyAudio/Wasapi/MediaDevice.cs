@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Runtime.Versioning;
 using TinyAudio.Wasapi.Interop;
 
 namespace TinyAudio.Wasapi
 {
+    [SupportedOSPlatform(("windows"))]
     internal sealed class MediaDevice
     {
         private const uint CLSCTX_ALL = 1 | 2 | 4 | 16;

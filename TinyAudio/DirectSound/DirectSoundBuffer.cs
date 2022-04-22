@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.Versioning;
 using TinyAudio.DirectSound.Interop;
 
 namespace TinyAudio.DirectSound
@@ -6,6 +7,7 @@ namespace TinyAudio.DirectSound
     /// <summary>
     /// Represents a DirectSound buffer which can be played in the background.
     /// </summary>
+    [SupportedOSPlatform(("windows"))]
     internal sealed class DirectSoundBuffer : IDisposable
     {
         private bool disposed;

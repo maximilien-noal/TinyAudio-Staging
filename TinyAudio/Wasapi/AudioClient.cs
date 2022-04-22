@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using TinyAudio.Wasapi.Interop;
 
 namespace TinyAudio.Wasapi
 {
+    [SupportedOSPlatform(("windows"))]
     internal sealed class AudioClient : IDisposable
     {
         private static readonly Guid SessionGuid = Guid.NewGuid();

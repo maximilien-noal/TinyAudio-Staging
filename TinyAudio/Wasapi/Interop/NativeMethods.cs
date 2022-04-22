@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 namespace TinyAudio.Wasapi.Interop
 {
+    [SupportedOSPlatform(("windows"))]
     internal static class NativeMethods
     {
         [DllImport("ole32.dll")]

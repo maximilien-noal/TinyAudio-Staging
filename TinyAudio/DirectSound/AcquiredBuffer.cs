@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Runtime.Versioning;
 
 namespace TinyAudio.DirectSound
 {
+    [SupportedOSPlatform(("windows"))]
     internal readonly struct AcquiredBuffer
     {
         private readonly DirectSoundBuffer buffer;

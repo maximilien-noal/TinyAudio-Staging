@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace TinyAudio
 {
+    [SupportedOSPlatform(("windows"))]
     /// <summary>
     /// Implements a background audio playback stream.
     /// </summary>

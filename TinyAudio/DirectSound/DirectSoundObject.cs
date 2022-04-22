@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.Versioning;
 using TinyAudio.DirectSound.Interop;
 
 namespace TinyAudio.DirectSound
@@ -6,6 +7,7 @@ namespace TinyAudio.DirectSound
     /// <summary>
     /// Provides access to a DirectSound device.
     /// </summary>
+    [SupportedOSPlatform(("windows"))]
     internal sealed class DirectSoundObject : IDisposable
     {
         private bool disposed;

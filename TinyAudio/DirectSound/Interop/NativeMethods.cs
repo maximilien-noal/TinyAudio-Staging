@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 namespace TinyAudio.DirectSound.Interop
 {
+    [SupportedOSPlatform(("windows"))]
     internal static class NativeMethods
     {
         [DllImport("dsound.dll", CallingConvention = CallingConvention.Winapi)]

@@ -1,5 +1,8 @@
-﻿namespace TinyAudio
+﻿using System.Runtime.Versioning;
+
+namespace TinyAudio
 {
+    [SupportedOSPlatform(("windows"))]
     /// <summary>
     /// Used to specify the number of bits per sample in a sound buffer.
     /// </summary>

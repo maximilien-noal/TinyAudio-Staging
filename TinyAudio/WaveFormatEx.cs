@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 namespace TinyAudio
 {
+    [SupportedOSPlatform(("windows"))]
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     internal struct WAVEFORMATEX
     {
@@ -15,6 +17,7 @@ namespace TinyAudio
         public ushort cbSize;
     }
 
+    [SupportedOSPlatform(("windows"))]
     [StructLayout(LayoutKind.Sequential)]
     internal struct WAVEFORMATEXTENSIBLE
     {

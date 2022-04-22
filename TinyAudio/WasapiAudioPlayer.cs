@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Runtime.Versioning;
 using System.Threading;
 using TinyAudio.Wasapi;
 
 namespace TinyAudio
 {
+    [SupportedOSPlatform(("windows"))]
     public sealed class WasapiAudioPlayer : AudioPlayer
     {
         private readonly AudioClient audioClient;
