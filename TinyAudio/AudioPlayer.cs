@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 
 namespace TinyAudio
 {
-    [SupportedOSPlatform(("windows"))]
     /// <summary>
     /// Implements a background audio playback stream.
     /// </summary>
