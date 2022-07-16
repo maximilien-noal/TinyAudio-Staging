@@ -7,12 +7,11 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
-
 public sealed unsafe class OpenAlAudioPlayer : AudioPlayer {
     private const int MaxAlBuffers = 100;
-    private const int OpenAlBufferModulo = 16;
-    private static AL? _al = null;
-    private static ALContext? _alContext = null;
+    private readonly Stack<byte[]> _backBuffer = new();
+    private readonly AL? _al;
+    private static ALContext? _alContext;
     private static Device* _device = null;
     private static Context* _context = null;
     private readonly uint _source = 0;
@@ -24,20 +23,16 @@ public sealed unsafe class OpenAlAudioPlayer : AudioPlayer {
     private OpenAlAudioPlayer(AudioFormat format) : base(format) {
         try {
             _al ??= AL.GetApi(true);
-            _al.GetError();
+            _al?.GetError();
             _alContext ??= ALContext.GetApi(true);
         } catch {
-            try {
-                _al ??= AL.GetApi(false);
-                _al.GetError();
-                _alContext ??= ALContext.GetApi(false);
-            } catch {
-                return;
-            }
+            _al = AL.GetApi(false);
+            _al?.GetError();
+            _alContext = ALContext.GetApi(false);
         }
 
         if (_device is null) {
-            _device = _alContext.OpenDevice(null);            
+            _device = _alContext.OpenDevice(null);
         }
 
         bool available = _device != null;
@@ -74,7 +69,7 @@ public sealed unsafe class OpenAlAudioPlayer : AudioPlayer {
         _openAlBufferFormat = BufferFormat.Stereo16;
     }
 
-    private uint GenNewBuffer()
+    private uint GenerateNewOpenAlBuffer()
     {
         if (_al is null) {
             throw new NullReferenceException(nameof(_al));
@@ -124,8 +119,6 @@ public sealed unsafe class OpenAlAudioPlayer : AudioPlayer {
         _al?.SourceStop(_source);
     }
 
-    private Stack<byte[]> _backBuffer = new();
-
     /// <summary>
     /// Gives the converted audio data to the OpenAL backend.
     /// </summary>
@@ -134,15 +127,14 @@ public sealed unsafe class OpenAlAudioPlayer : AudioPlayer {
             throw new NullReferenceException(nameof(_al));
         }
         _al.GetSourceProperty(_source, GetSourceInteger.BuffersProcessed, out int processed);
-        int remainingLength = GetRemainingLength(input);
         if (processed > 0) {
             byte[]? data = null;
             byte[] inputToArray = input.ToArray();
-            while (processed > 0 && remainingLength > 0) {
+            while (processed > 0) {
                 uint buffer = 0;
                 _al.SourceUnqueueBuffers(_source, 1, &buffer);
                 _al.GetError();
-                if (BufferData(buffer, inputToArray, ref data, ref remainingLength)) {
+                if (!TryEnqueueData(buffer, inputToArray, ref data)) {
                     break;
                 }
                 processed--;
@@ -150,35 +142,19 @@ public sealed unsafe class OpenAlAudioPlayer : AudioPlayer {
         } else if(_alBuffers.Count < MaxAlBuffers) {
             byte[]? data = null;
             byte[] inputToArray = input.ToArray();
-            while (remainingLength > 0) {
-                uint buffer = GenNewBuffer();
-                if (BufferData(buffer, inputToArray, ref data, ref remainingLength)) {
-                    break;
-                }
-            }
+            uint buffer = GenerateNewOpenAlBuffer();
+            TryEnqueueData(buffer, inputToArray, ref data);
         } else {
             return 0;
         }
-        Play();
-        return remainingLength;
-    }
-    private static int GetRemainingLength(ReadOnlySpan<byte> input)
-    {
-        if (input.Length == 0) {
-            return 0;
-        }
-        int remainingLength = input.Length - (input.Length % OpenAlBufferModulo);
-        if (remainingLength == 0) {
-            remainingLength = input.Length;
-        }
-        return remainingLength;
+        return input.Length;
     }
 
-    private bool BufferData(uint buffer, byte[] inputToArray, ref byte[]? data, ref int remainingLength)
+    private bool TryEnqueueData(uint buffer, byte[] inputToArray, ref byte[]? data)
     {
-        if (buffer == 0)
+        if (buffer == 0 || inputToArray.Length - data?.Length <= 0)
         {
-            return true;
+            return false;
         }
 
         if (data is null)
@@ -187,42 +163,30 @@ public sealed unsafe class OpenAlAudioPlayer : AudioPlayer {
         }
         else
         {
-            if (inputToArray.Length - data.Length <= 0)
-            {
-                return true;
-            }
-
             data = inputToArray[..data.Length];
-            remainingLength = data.Length - (data.Length % OpenAlBufferModulo);
         }
-
-        if (_backBuffer.TryPeek(out _)) {
+        // We keep the backbuffer stuff just in case
+        // it is not used anymore at runtime
+        // Which means OpenAL accepts all our buffer data sizes.
+        if(_backBuffer.TryPeek(out _))
+        {
             while (_backBuffer.TryPop(out byte[]? bytes)) {
                 byte[] newData = new byte[bytes.Length + data.Length];
                 Array.Copy(bytes, newData, bytes.Length);
                 Array.Copy(data, 0, newData, bytes.Length, data.Length);
                 data = newData;
             }
-            if (!TryBufferData(buffer, data)) {
-                return false;
-            }
-        } else {
-            byte[] currentBytes = data[0..remainingLength];
-            if (!TryBufferData(buffer, currentBytes)) {
-                return false;
-            }
         }
-        SourceState state = GetSourceState();
-        if (state is SourceState.Playing or SourceState.Paused)
-        {
-            _al?.SourceQueueBuffers(_source, 1, &buffer);
+        return TryQueueBuffer(buffer, data);
+    }
+
+    private bool TryQueueBuffer(uint buffer, byte[] currentBytes)
+    {
+        if (TryBufferData(buffer, currentBytes)) {
+           _al?.SourceQueueBuffers(_source, 1, &buffer);
             ThrowIfAlError();
-        }
-        else
-        {
             Play();
-            _al?.SourceQueueBuffers(_source, 1, &buffer);
-            ThrowIfAlError();
+            return true;
         }
         return false;
     }
@@ -248,7 +212,7 @@ public sealed unsafe class OpenAlAudioPlayer : AudioPlayer {
         }
     }
 
-    public static OpenAlAudioPlayer Create(TimeSpan bufferLength, bool useCallback = false) {
+    public static OpenAlAudioPlayer Create(TimeSpan length, bool useCallback) {
         return new OpenAlAudioPlayer(new AudioFormat(SampleRate: 48000, Channels: 2,
             SampleFormat: SampleFormat.SignedPcm16));
     }
